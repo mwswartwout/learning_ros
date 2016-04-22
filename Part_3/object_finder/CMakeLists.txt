@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(object_finder)
+
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 find_package(catkin_simple REQUIRED)
 
 #uncomment next line to use OpenCV library
@@ -9,7 +15,6 @@ find_package(catkin_simple REQUIRED)
 #uncomment the next 2 lines to use the point-cloud library
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
-
 
 #uncomment the following 4 lines to use the Eigen library
 find_package(cmake_modules REQUIRED)

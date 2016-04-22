@@ -8,8 +8,16 @@
 // Automated header generation creates multiple headers for message I/O
 // These are referred to by the root name (demo) and appended name (Action)
 #include<pcl_utils/pcl_utils.h>
+#include <pcl/filters/passthrough.h>
 #include<object_finder/objectFinderAction.h>
+#include <tf/tf.h>
 
+#define CAN_HEIGHT .13
+#define MIN_CLOUD_SIZE 100
+#define RED 100
+#define GREEN 100
+#define BLUE 100
+#define COLOR_ERR 1
 
 class ObjectFinder {
 private:
@@ -28,9 +36,22 @@ private:
     // would need to use: as_.publishFeedback(feedback_); to send incremental feedback to the client
 
     PclUtils pclUtils_;
+    tf::TransformListener tf_listener;
+    tf::StampedTransform tf_sensor_frame_to_torso_frame; //use this to transform sensor frame to torso frame
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr can_cloud;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr kinect_transformed_cloud;
+    ros::Publisher pubCloud;
+    Eigen::Vector3f centroid;
+    float surface_height;
+
     //specialized function to find an upright Coke can on known height of horizontal surface;
     // returns true/false for found/not-found, and if found, fills in the object pose
-    bool find_upright_coke_can(float surface_height,geometry_msgs::PoseStamped &object_pose);
+    bool find_upright_coke_can(geometry_msgs::PoseStamped &object_pose);
+    tf::StampedTransform wait_for_transform();
+    void transform_kinect_cloud();
+    void filter_kinect_cloud();
+    void publish_can_cloud();
+    bool can_exists();
 
 public:
     ObjectFinder(); //define the body of the constructor outside of class definition
@@ -44,26 +65,122 @@ public:
 
 
 ObjectFinder::ObjectFinder() :
-   object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1),false),pclUtils_(&nh_) {
+        object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1),false),pclUtils_(&nh_),
+        can_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+        kinect_transformed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>) {
     ROS_INFO("in constructor of ObjectFinder...");
     // do any other desired initializations here...specific to your implementation
 
     object_finder_as_.start(); //start the server running
+    pubCloud = nh_.advertise<sensor_msgs::PointCloud2> ("can", 1, true);
+}
+
+tf::StampedTransform ObjectFinder::wait_for_transform() {
+    //let's warm up the tf_listener, to make sure it get's all the transforms it needs to avoid crashing:
+    bool tferr = true;
+    ROS_INFO("waiting for tf between kinect_pc_frame and torso...");
+    while (tferr) {
+        tferr = false;
+        try {
+            //The direction of the transform returned will be from the target_frame to the source_frame.
+            //Which if applied to data, will transform data in the source_frame into the target_frame. See tf/CoordinateFrameConventions#Transform_Direction
+            tf_listener.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time(0), tf_sensor_frame_to_torso_frame);
+        } catch (tf::TransformException &exception) {
+            ROS_ERROR("%s", exception.what());
+            tferr = true;
+            ros::Duration(0.5).sleep(); // sleep for half a second
+            ros::spinOnce();
+        }
+    }
+    ROS_INFO("tf is good"); //tf-listener found a complete chain from sensor to world; ready to roll
+    return tf_sensor_frame_to_torso_frame;
+}
+void ObjectFinder::transform_kinect_cloud() {
+    //convert the tf to an Eigen::Affine:
+    Eigen::Affine3f A_sensor_wrt_torso;
+    A_sensor_wrt_torso = pclUtils_.transformTFToEigen(tf_sensor_frame_to_torso_frame);
+    //transform the kinect data to the torso frame;
+    // we don't need to have it returned; pcl_utils can own it as a member var
+    ROS_INFO("Transforming kinect cloud");
+    pclUtils_.transform_kinect_clr_cloud(A_sensor_wrt_torso);
+}
+
+ void ObjectFinder::filter_kinect_cloud() {
+    // Save transformed kinect data into PointCloud object that we can manipulate
+    ROS_INFO("Getting transformed kinect cloud");
+    pclUtils_.get_kinect_transformed_points(kinect_transformed_cloud);
+
+    // Filter the kinect cloud to just contain points that could feasibly be a part of the can based on height
+    pcl::PassThrough<pcl::PointXYZRGB> pass; //create a pass-through object
+    pass.setInputCloud(kinect_transformed_cloud); //set the cloud we want to operate on--pass via a pointer
+    pass.setFilterFieldName("z"); // we will "filter" based on points that lie within some range of z-value
+    pass.setFilterLimits(surface_height, surface_height + CAN_HEIGHT); //here is the range of z values
+    std::vector<int> indices;
+    ROS_INFO("Filtering cloud by z height");
+    pass.filter(indices); //  this will return the indices of the points in transformed_cloud_ptr that pass our test
+    ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
+
+    // Set properties of can_cloud
+    can_cloud->points.resize(indices.size());
+    can_cloud->header.frame_id = "base_link";
+
+    // Now add points that passed the height filter into the can_cloud
+    // But only add them if they are approximately red in color
+    Eigen::Vector3i color;
+    for (int i = 0; i < indices.size(); i++) {
+        color = kinect_transformed_cloud->points[indices[i]].getRGBVector3i();
+        if (abs(color(0) - RED) < COLOR_ERR && abs(color(1) - GREEN) < COLOR_ERR && abs(color(2) - BLUE) < COLOR_ERR) {
+            can_cloud->points[i] = kinect_transformed_cloud->points[indices[i]];
+        }
+    }
+}
+
+void ObjectFinder::publish_can_cloud() {
+
+    sensor_msgs::PointCloud2 ros_can_cloud;
+    pcl::toROSMsg(*can_cloud, ros_can_cloud);
+
+    while (ros::ok) {
+        pubCloud.publish(ros_can_cloud); // will not need to keep republishing if display setting is persistent
+        ros::spinOnce();
+        ros::Duration(0.1).sleep();
+    }
+}
+
+bool ObjectFinder::can_exists() {
+    if (can_cloud->points.size() > MIN_CLOUD_SIZE) {
+        ROS_INFO("Can is present on table");
+        return true;
+    }
+    else {
+        ROS_INFO("No can detected");
+        return false;
+    }
 }
 
 //specialized function: DUMMY...JUST RETURN A HARD-CODED POSE; FIX THIS
-bool ObjectFinder::find_upright_coke_can(float surface_height,geometry_msgs::PoseStamped &object_pose) {
-    bool found_object=true;
-    object_pose.header.frame_id = "torso";
-    object_pose.pose.position.x = 0.680;
-    object_pose.pose.position.y = -0.205;
-    object_pose.pose.position.z = surface_height;
-    object_pose.pose.orientation.x = 0;
-    object_pose.pose.orientation.y = 0;
-    object_pose.pose.orientation.z = 0;
-    object_pose.pose.orientation.w = 1;   
+bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose) {
+    bool found_object=false;
+
+    wait_for_transform();
+    transform_kinect_cloud();
+    filter_kinect_cloud();
+    if (can_exists()) {
+        centroid = pclUtils_.compute_centroid(can_cloud);
+
+        object_pose.header.frame_id = "base_link";
+        object_pose.pose.position.x = centroid(0);
+        object_pose.pose.position.y = centroid(1);
+        object_pose.pose.position.z = surface_height;
+        object_pose.pose.orientation.x = 0;
+        object_pose.pose.orientation.y = 0;
+        object_pose.pose.orientation.z = 0;
+        object_pose.pose.orientation.w = 1;
+        found_object = true;
+        // TODO might need to set orientation to orientation we want gripper to be at, or just manually set gripper orientation in object_grabber
+    }
+
     return found_object;
-    
 }
 
 //executeCB implementation: this is a member method that will get registered with the action server
@@ -78,15 +195,14 @@ void ObjectFinder::executeCB(const actionlib::SimpleActionServer<object_finder::
     int object_id = goal->object_id;
     geometry_msgs::PoseStamped object_pose;
     bool known_surface_ht = goal->known_surface_ht;
-    float surface_height;
     if (known_surface_ht) {
         surface_height=goal->surface_ht;
     }
-    bool found_object=false;
+    bool found_object = false;
     switch(object_id) {
         case object_finder::objectFinderGoal::COKE_CAN_UPRIGHT: 
               //specialized function to find an upright Coke can on a horizontal surface of known height:
-               found_object = find_upright_coke_can(surface_height,object_pose); //special case for Coke can;
+               found_object = find_upright_coke_can(object_pose); //special case for Coke can;
                if (found_object) {
                    ROS_INFO("found upright Coke can!");
                    result_.found_object_code = object_finder::objectFinderResult::OBJECT_FOUND;

@@ -1,0 +1,9 @@
+<launch>
+    <include file="$(find freenect_launch)/launch/freenect.launch"/>
+    <include file="$(find cwru_base)/launch/start_base.launch"/>
+    <node pkg="tf" type="static_transform_publisher" name="jinx_merry_trasnform" args="-0.2 0 1.0 0 0 0 base_link base 50"/>
+    <node pkg="tf" type="static_transform_publisher" name="jinx_kinect_transform" args="0.05 0 1.8 0 1.4 0 base_link camera_link 50"/>
+    <node pkg="rviz" type="rviz" name="rviz"/>
+    <node pkg="object_finder" type="object_finder_as" name="object_finder_as"/>
+    <node pkg="object_finder" type="example_object_finder_action_client" name="example_object_finder_action_client"/>
+</launch>

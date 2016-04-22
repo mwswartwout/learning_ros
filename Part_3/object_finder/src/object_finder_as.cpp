@@ -177,6 +177,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
         object_pose.pose.orientation.z = 0;
         object_pose.pose.orientation.w = 1;
         found_object = true;
+        publish_can_cloud(); // TODO remove this once filters are tuned since it will hang indefinitely
         // TODO might need to set orientation to orientation we want gripper to be at, or just manually set gripper orientation in object_grabber
     }
 
@@ -219,7 +220,6 @@ void ObjectFinder::executeCB(const actionlib::SimpleActionServer<object_finder::
              result_.found_object_code = object_finder::objectFinderResult::OBJECT_CODE_NOT_RECOGNIZED; 
              object_finder_as_.setAborted(result_);
             }
-  
 }
 
 int main(int argc, char** argv) {

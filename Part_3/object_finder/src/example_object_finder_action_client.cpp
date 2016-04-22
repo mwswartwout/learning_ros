@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     // attempt to connect to the server:
     ROS_INFO("waiting for server: ");
     bool server_exists = false;
-    while ((!server_exists)&&(ros::ok())) {
+    while ((!server_exists) && (ros::ok())) {
         server_exists = object_finder_ac.waitForServer(ros::Duration(0.5)); // 
         ros::spinOnce();
         ros::Duration(0.5).sleep();
@@ -55,10 +55,10 @@ int main(int argc, char** argv) {
     
     object_finder_goal.object_id=object_finder::objectFinderGoal::COKE_CAN_UPRIGHT;
     object_finder_goal.known_surface_ht=true;
-    object_finder_goal.surface_ht = 0.05;
+    object_finder_goal.surface_ht = 0.82;
     
     ROS_INFO("sending goal: ");
-        object_finder_ac.sendGoal(object_finder_goal,&objectFinderDoneCb); // we could also name additional callback functions here, if desired
+        object_finder_ac.sendGoal(object_finder_goal, &objectFinderDoneCb); // we could also name additional callback functions here, if desired
         //    action_client.sendGoal(goal, &doneCb, &activeCb, &feedbackCb); //e.g., like this
         
         bool finished_before_timeout = object_finder_ac.waitForResult(ros::Duration(5.0));

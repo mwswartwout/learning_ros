@@ -14,10 +14,10 @@
 
 #define CAN_HEIGHT .13
 #define MIN_CLOUD_SIZE 100
-#define RED 100
-#define GREEN 100
-#define BLUE 100
-#define COLOR_ERR 1
+#define RED 96
+#define GREEN 33
+#define BLUE 49
+#define COLOR_ERR 20
 
 class ObjectFinder {
 private:

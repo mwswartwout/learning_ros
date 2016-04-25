@@ -993,7 +993,7 @@ void PclUtils::kinectCB(const sensor_msgs::PointCloud2ConstPtr& cloud) {
         got_kinect_cloud_ = true; //cue to "main" that callback received and saved a pointcloud 
         //check some colors:
    int npts_clr = pclKinect_clr_ptr_->points.size();
-    cout<<"Kinect color pts size = "<<npts_clr<<endl;
+    ROS_INFO_STREAM("Kinect color pts size = " << npts_clr);
     avg_color_ = find_avg_color();
     /*
      for (size_t i = 0; i < pclKinect_clr_ptr_->points.size (); ++i)
@@ -1010,7 +1010,8 @@ void PclUtils::kinectCB(const sensor_msgs::PointCloud2ConstPtr& cloud) {
      *     */     
     }
     //pcl::io::savePCDFileASCII ("snapshot.pcd", *g_pclKinect);
-    //ROS_INFO("saved PCD image consisting of %d data points to snapshot.pcd",(int) g_pclKinect->points.size ()); 
+    //ROS_INFO("saved PCD image consisting of %d data points to snapshot.pcd",(int) g_pclKinect->points.size ());
+    ROS_INFO("Exiting kinectCB...");
 }
 
 // this callback wakes up when a new "selected Points" message arrives

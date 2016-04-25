@@ -17,7 +17,9 @@
 #define RED 96
 #define GREEN 33
 #define BLUE 49
-#define COLOR_ERR 20
+#define COLOR_ERR 40
+#define MIN_X .1
+#define MAX_X .2
 
 class ObjectFinder {
 private:
@@ -39,6 +41,7 @@ private:
     tf::TransformListener tf_listener;
     tf::StampedTransform tf_sensor_frame_to_torso_frame; //use this to transform sensor frame to torso frame
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr can_cloud;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr kinect_transformed_cloud;
     ros::Publisher pubCloud;
     Eigen::Vector3f centroid;
@@ -67,6 +70,7 @@ public:
 ObjectFinder::ObjectFinder() :
         object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1), false), pclUtils_(&nh_),
         can_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+        temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
         kinect_transformed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>) {
     ROS_INFO("in constructor of ObjectFinder...");
     // do any other desired initializations here...specific to your implementation
@@ -107,32 +111,44 @@ void ObjectFinder::transform_kinect_cloud() {
     pclUtils_.transform_kinect_clr_cloud(A_sensor_wrt_torso);
 }
 
- void ObjectFinder::filter_kinect_cloud() {
+void ObjectFinder::filter_kinect_cloud() {
+    // First clear all our clouds
+    can_cloud->clear();
+    temp_cloud->clear();
+
     // Save transformed kinect data into PointCloud object that we can manipulate
     ROS_INFO("Getting transformed kinect cloud");
     pclUtils_.get_kinect_transformed_points(kinect_transformed_cloud);
 
     // Filter the kinect cloud to just contain points that could feasibly be a part of the can based on height
     pcl::PassThrough<pcl::PointXYZRGB> pass; //create a pass-through object
+
     pass.setInputCloud(kinect_transformed_cloud); //set the cloud we want to operate on--pass via a pointer
     pass.setFilterFieldName("z"); // we will "filter" based on points that lie within some range of z-value
     pass.setFilterLimits(surface_height, surface_height + CAN_HEIGHT); //here is the range of z values
-    std::vector<int> indices;
+    //std::vector<int> indices;
     ROS_INFO("Filtering cloud by z height");
-    pass.filter(indices); //  this will return the indices of the points in transformed_cloud_ptr that pass our test
-    ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
+    pass.filter(*can_cloud); // Store the filtered cloud in the can_cloud container
+    //ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
+
+    // Now we will filter by x and store it in the temp_cloud container
+    pass.setInputCloud(can_cloud);
+    pass.setFilterFieldName("x");
+    pass.setFilterLimits(MIN_X, MAX_X);
+    pass.filter(*temp_cloud);
+    can_cloud->clear(); // Clear the can_cloud so that it can store newly filtered points later
 
     // Set properties of can_cloud
-    can_cloud->points.resize(indices.size());
-    can_cloud->header.frame_id = "base_link";
+    //can_cloud->points.resize(indices.size());
+    //can_cloud->header.frame_id = "base_link";
 
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color
     Eigen::Vector3i color;
-    for (int i = 0; i < indices.size(); i++) {
-        color = kinect_transformed_cloud->points[indices[i]].getRGBVector3i();
+    for (unsigned i = 0; i < temp_cloud->size(); i++) {
+        color = temp_cloud->points[i].getRGBVector3i();
         if (abs(color(0) - RED) < COLOR_ERR && abs(color(1) - GREEN) < COLOR_ERR && abs(color(2) - BLUE) < COLOR_ERR) {
-            can_cloud->points[i] = kinect_transformed_cloud->points[indices[i]];
+            can_cloud->points[i] = temp_cloud->points[i];
         }
     }
 }

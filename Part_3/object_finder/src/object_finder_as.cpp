@@ -14,10 +14,10 @@
 
 #define CAN_HEIGHT .13
 #define MIN_CLOUD_SIZE 100
-#define RED 100
-#define GREEN 100
-#define BLUE 100
-#define COLOR_ERR 1
+#define RED 96
+#define GREEN 33
+#define BLUE 49
+#define COLOR_ERR 20
 
 class ObjectFinder {
 private:
@@ -65,7 +65,7 @@ public:
 
 
 ObjectFinder::ObjectFinder() :
-        object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1),false),pclUtils_(&nh_),
+        object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1), false), pclUtils_(&nh_),
         can_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
         kinect_transformed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>) {
     ROS_INFO("in constructor of ObjectFinder...");

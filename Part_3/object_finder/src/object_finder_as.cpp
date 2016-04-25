@@ -72,7 +72,9 @@ ObjectFinder::ObjectFinder() :
     // do any other desired initializations here...specific to your implementation
 
     object_finder_as_.start(); //start the server running
+    ROS_INFO("Started action server");
     pubCloud = nh_.advertise<sensor_msgs::PointCloud2> ("can", 1, true);
+    ROS_INFO("Created 'can' publisher");
 }
 
 tf::StampedTransform ObjectFinder::wait_for_transform() {

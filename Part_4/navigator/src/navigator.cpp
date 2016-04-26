@@ -1,10 +1,26 @@
 // example_action_server: a simple action server
 // Wyatt Newman
 
-#include<ros/ros.h>
+#include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
-#include<navigator/navigatorAction.h>
+#include <navigator/navigatorAction.h>
+#include <mobot_pub_des_state/path.h>
+#include <iostream>
+#include <string>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 
+using namespace std;
+
+geometry_msgs::Quaternion convertPlanarPhi2Quaternion(double phi) {
+    geometry_msgs::Quaternion quaternion;
+    quaternion.x = 0.0;
+    quaternion.y = 0.0;
+    quaternion.z = sin(phi / 2.0);
+    quaternion.w = cos(phi / 2.0);
+    return quaternion;
+}
 
 class Navigator {
 private:
@@ -43,13 +59,85 @@ Navigator::Navigator() :
 
 //specialized function: DUMMY...JUST RETURN SUCCESS...fix this
 //this SHOULD do the hard work of navigating to HOME
-int Navigator::navigate_home() { 
+int Navigator::navigate_home() {
+    ROS_INFO("using my_lin_steering_console to navigate...");
+
+    ros::ServiceClient client = nh_.serviceClient<mobot_pub_des_state::path>("append_path_queue_service");
+    geometry_msgs::Quaternion quat;
+    
+    while (!client.exists()) {
+      ROS_INFO("waiting for service...");
+      ros::Duration(1.0).sleep();
+    }
+    ROS_INFO("connected client to service");
+    mobot_pub_des_state::path path_srv;
+    
+    //create some path points...this should be done by some intelligent algorithm, but we'll hard-code it here
+    geometry_msgs::PoseStamped pose_stamped;
+    pose_stamped.header.frame_id = "world";
+    geometry_msgs::Pose pose;
+
+    pose.position.x = 0.0; // say desired x-coord is 3
+    pose.position.y = 0.0;
+    pose.position.z = 0.0; // let's hope so!
+    quat = convertPlanarPhi2Quaternion(0);
+    pose.orientation = quat;
+    pose_stamped.pose = pose;
+    path_srv.request.path.poses.push_back(pose_stamped);
+    
+    client.call(path_srv);
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED; //just say we were successful
 } 
-int Navigator::navigate_to_table() { 
+int Navigator::navigate_to_table() {
+    ROS_INFO("using my_lin_steering_console to navigate...");
+
+    ros::ServiceClient client = nh_.serviceClient<mobot_pub_des_state::path>("append_path_queue_service");
+    geometry_msgs::Quaternion quat;
+    
+    while (!client.exists()) {
+      ROS_INFO("waiting for service...");
+      ros::Duration(1.0).sleep();
+    }
+    ROS_INFO("connected client to service");
+    mobot_pub_des_state::path path_srv;
+    
+    //create some path points...this should be done by some intelligent algorithm, but we'll hard-code it here
+    geometry_msgs::PoseStamped pose_stamped;
+    pose_stamped.header.frame_id = "world";
+    geometry_msgs::Pose pose;
+
+    pose.position.x = 2.0; // say desired x-coord is 3
+    pose.position.y = 0.0;
+    pose.position.z = 0.0; // let's hope so!
+    quat = convertPlanarPhi2Quaternion(0);
+    pose.orientation = quat;
+    pose_stamped.pose = pose;
+    path_srv.request.path.poses.push_back(pose_stamped);
+
+    //repeat (x,y) with new heading:
+    pose_stamped.pose.orientation = convertPlanarPhi2Quaternion(1.57); 
+    path_srv.request.path.poses.push_back(pose_stamped);
+    
+    client.call(path_srv);
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED; //just say we were successful
 }
 int Navigator::navigate_to_pose(geometry_msgs::PoseStamped goal_pose) {
+    ROS_INFO("using my_lin_steering_console to navigate...");
+
+    ros::ServiceClient client = nh_.serviceClient<mobot_pub_des_state::path>("append_path_queue_service");
+    geometry_msgs::Quaternion quat;
+    
+    while (!client.exists()) {
+      ROS_INFO("waiting for service...");
+      ros::Duration(1.0).sleep();
+    }
+    ROS_INFO("connected client to service");
+    mobot_pub_des_state::path path_srv;
+    
+    path_srv.request.path.poses.push_back(goal_pose);
+    
+    client.call(path_srv);
+
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED;
 }
 

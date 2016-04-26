@@ -2,13 +2,15 @@
 // wsn, April, 2016
 // illustrates use of navigator action server called "navigatorActionServer"
 
-#include<ros/ros.h>
+#include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <navigator/navigatorAction.h>
 #include <Eigen/Eigen>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <iostream>
+using namespace std;
 
 geometry_msgs::PoseStamped g_desired_pose;
 int g_navigator_rtn_code;
@@ -48,18 +50,47 @@ int main(int argc, char** argv) {
      
     navigator::navigatorGoal navigation_goal;
     
-    navigation_goal.location_code=navigator::navigatorGoal::HOME;
-    
-    ROS_INFO("sending goal: ");
-        navigator_ac.sendGoal(navigation_goal,&navigatorDoneCb); // we could also name additional callback functions here, if desired
+    while(ros::ok()) {
+    	int WHERE;
+    	cout << "1: HOME 2: TABLE 3: COORDS" << endl;
+    	cin >> WHERE;
+    	switch(WHERE) {
+    		case 1:
+    			navigation_goal.location_code=navigator::navigatorGoal::HOME;
+    			break;
+    		case 2:
+    			navigation_goal.location_code=navigator::navigatorGoal::TABLE;
+    			break;
+    		case 3:
+    			navigation_goal.location_code=navigator::navigatorGoal::COORDS;
+    			break;
+    		default:
+    			cout << "wrong input!" << endl;
+    	}
 
-        
-        bool finished_before_timeout = navigator_ac.waitForResult(ros::Duration(30.0));
-        //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
-        if (!finished_before_timeout) {
-            ROS_WARN("giving up waiting on result ");
-            return 1;
-        }
+	    geometry_msgs::PoseStamped desired_pose;
+	    desired_pose.pose.position.x = 0;
+	    desired_pose.pose.position.y = 2;
+	    desired_pose.pose.position.z = 0;
+	    desired_pose.pose.orientation.x = 0;
+	    desired_pose.pose.orientation.y = 0;
+	    desired_pose.pose.orientation.z = 0;
+	    desired_pose.pose.orientation.w = 0;
+
+	    navigation_goal.desired_pose = desired_pose;
+	    
+	    ROS_INFO("sending goal: ");
+	    navigator_ac.sendGoal(navigation_goal,&navigatorDoneCb); // we could also name additional callback functions here, if desired
+
+	    bool finished_before_timeout = navigator_ac.waitForResult(ros::Duration(30.0));
+	    //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
+	    if (!finished_before_timeout) {
+	        ROS_WARN("giving up waiting on result ");
+	        return 1;
+	    }
+    }
+
+
         
     return 0;
 }

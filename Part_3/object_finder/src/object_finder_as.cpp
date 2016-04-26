@@ -130,20 +130,22 @@ void ObjectFinder::filter_kinect_cloud() {
     ROS_INFO("Filtering cloud by z height");
     pass.filter(*can_cloud); // Store the filtered cloud in the can_cloud container
     //ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
-
+    ROS_INFO_STREAM("Z filtered cloud has " << can_cloud->size() << " points");
     // Now we will filter by x and store it in the temp_cloud container
+    ROS_INFO("Filtering cloud by x distance");
     pass.setInputCloud(can_cloud);
     pass.setFilterFieldName("x");
     pass.setFilterLimits(MIN_X, MAX_X);
     pass.filter(*temp_cloud);
     can_cloud->clear(); // Clear the can_cloud so that it can store newly filtered points later
-
+    ROS_INFO_STREAM("X filtered cloud has " << temp_cloud->size() << " points");
     // Set properties of can_cloud
     //can_cloud->points.resize(indices.size());
     //can_cloud->header.frame_id = "base_link";
 
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color
+    ROS_INFO("Filtering cloud by color");
     Eigen::Vector3i color;
     for (unsigned i = 0; i < temp_cloud->size(); i++) {
         color = temp_cloud->points[i].getRGBVector3i();
@@ -151,6 +153,7 @@ void ObjectFinder::filter_kinect_cloud() {
             can_cloud->points[i] = temp_cloud->points[i];
         }
     }
+    ROS_INFO_STREAM("Final can cloud has " << can_cloud->size() << " points");
 }
 
 void ObjectFinder::publish_can_cloud() {

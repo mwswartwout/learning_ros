@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
     ArmMotionCommander arm_motion_commander(&nh);
     g_arm_motion_commander_ptr= &arm_motion_commander; // make this globally accessible; alt: could have object grabber own it
     
-        ROS_INFO("going into spin");
+    ROS_INFO("going into spin");
     while (ros::ok()) {
         ros::spinOnce(); //normally, can simply do: ros::spin();  
     }

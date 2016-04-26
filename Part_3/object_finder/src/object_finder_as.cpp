@@ -10,7 +10,6 @@
 #include<pcl_utils/pcl_utils.h>
 #include <pcl/filters/passthrough.h>
 #include<object_finder/objectFinderAction.h>
-#include <tf/tf.h>
 
 #define CAN_HEIGHT .13
 #define MIN_CLOUD_SIZE 100
@@ -101,6 +100,7 @@ tf::StampedTransform ObjectFinder::wait_for_transform() {
     ROS_INFO("tf is good"); //tf-listener found a complete chain from sensor to world; ready to roll
     return tf_sensor_frame_to_torso_frame;
 }
+
 void ObjectFinder::transform_kinect_cloud() {
     //convert the tf to an Eigen::Affine:
     Eigen::Affine3f A_sensor_wrt_torso;

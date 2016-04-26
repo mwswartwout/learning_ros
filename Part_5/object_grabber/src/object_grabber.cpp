@@ -1,9 +1,24 @@
 //define a class to encapsulate some of the tedium of populating and sending goals,
 // and interpreting responses
+#include<ros/ros.h>
+#include <actionlib/client/simple_action_client.h>
+#include <actionlib/server/simple_action_server.h>
+#include <actionlib/client/terminal_state.h>
+#include <cartesian_planner/baxter_cart_moveAction.h>
+#include <Eigen/Eigen>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include<geometry_msgs/PoseStamped.h>
+#include <object_grabber/object_grabberAction.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/Header.h>
+#include <tf/transform_listener.h>
+
 class ObjectGrabber {
 private:
     ros::NodeHandle nh_;
 
+    tf::TransformListener tf_listener;
     //messages to send/receive cartesian goals / results:
     object_grabber::object_grabberGoal grab_goal_;
     object_grabber::object_grabberResult grab_result_; 
@@ -29,7 +44,8 @@ private:
     //action callback fnc
     void executeCB(const actionlib::SimpleActionServer<object_grabber::object_grabberAction>::GoalConstPtr& goal);   
     void vertical_cylinder_power_grasp(geometry_msgs::PoseStamped object_pose);    
-    
+    tf::StampedTransform wait_for_transform(std_msgs::Header header);
+
 public:
 
         ObjectGrabber(ros::NodeHandle* nodehandle); //define the body of the constructor outside of class definition
@@ -47,7 +63,7 @@ ObjectGrabber::ObjectGrabber(ros::NodeHandle* nodehandle): nh_(*nodehandle),
 // in the above initialization, we name the server "example_action"
 //  clients will need to refer to this name to connect with this server
 {
-        ROS_INFO("in constructor of ObjectGrabber");
+    ROS_INFO("in constructor of ObjectGrabber");
     // do any other desired initializations here, as needed
     gripper_table_z_ = 0.05; //gripper origin height above torso for grasp of cyl on table
     L_approach_ = 0.25; //distance to slide towards cylinder
@@ -74,61 +90,95 @@ ObjectGrabber::ObjectGrabber(ros::NodeHandle* nodehandle): nh_(*nodehandle),
     object_grabber_as_.start(); //start the server running
 }
 
+tf::StampedTransform ObjectGrabber::wait_for_transform(std_msgs::Header header) {
+    //let's warm up the tf_listener, to make sure it get's all the transforms it needs to avoid crashing:
+    tf::StampedTransform tf_target_frame_to_source_frame;
+    bool tferr = true;
+    ROS_INFO("waiting for tf between kinect_pc_frame and torso...");
+    while (tferr) {
+        tferr = false;
+        try {
+            //The direction of the transform returned will be from the target_frame to the source_frame.
+            //Which if applied to data, will transform data in the source_frame into the target_frame. See tf/CoordinateFrameConventions#Transform_Direction
+            tf_listener.lookupTransform("torso", header.frame_id, ros::Time(0), tf_target_frame_to_source_frame);
+        } catch (tf::TransformException &exception) {
+            ROS_ERROR("%s", exception.what());
+            tferr = true;
+            ros::Duration(0.5).sleep(); // sleep for half a second
+            ros::spinOnce();
+        }
+    }
+    ROS_INFO("tf is good"); //tf-listener found a complete chain from sensor to world; ready to roll
+    return tf_target_frame_to_source_frame;
+}
+
 void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped object_pose) {
-   geometry_msgs::PoseStamped des_gripper_grasp_pose, des_gripper_approach_pose, des_gripper_depart_pose;
-   //make sure the object pose is in the torso frame; transform if necessary;
-   //skip this for now
-   int rtn_val;
-       //send a command to plan a joint-space move to pre-defined pose:   
-   rtn_val = g_arm_motion_commander_ptr->plan_move_to_pre_pose();
-    
+    ROS_INFO("Waiting for transform between object_pose frame_id and torso");
+    tf::StampedTransform tf_header_to_torso = wait_for_transform(object_pose.header);
+
+    geometry_msgs::PoseStamped des_gripper_grasp_pose, des_gripper_approach_pose, des_gripper_depart_pose, object_transformed_pose;
+    //make sure the object pose is in the torso frame; transform if necessary;
+    if (object_pose.header.frame_id == "torso") {
+        ROS_INFO("Given object pose already in the torso frame");
+        object_transformed_pose = object_pose;
+    }
+    else {
+        ROS_INFO("Given object pose not in the torso frame, transforming now");
+        tf_listener.transformPose("torso", object_pose, object_transformed_pose);
+    }
+
+    //skip this for now
+    int rtn_val;
+       //send a command to plan a joint-space move to pre-defined pose:
+    rtn_val = g_arm_motion_commander_ptr->plan_move_to_pre_pose();
+
     //send command to execute planned motion
     rtn_val=g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
-    
+
     //inquire re/ right-arm joint angles:
     rtn_val=g_arm_motion_commander_ptr->rt_arm_request_q_data();
-    
+
     Eigen::Affine3d object_affine;
-    object_affine = 
-     g_arm_motion_commander_ptr->transformPoseToEigenAffine3d(object_pose.pose);
+    object_affine =
+     g_arm_motion_commander_ptr->transformPoseToEigenAffine3d(object_transformed_pose.pose);
     Eigen::Vector3d object_origin;
     object_origin = object_affine.translation();
     grasp_origin_ = object_origin; //grasp origin is same as object origin...
     grasp_origin_(2) = gripper_table_z_;//except elevate the gripper for table clearance
     a_gripper_grasp_.translation() = grasp_origin_;
-    
+
     //to slide sideways to approach, compute a pre-grasp approach pose;
     // corresponds to backing up along gripper-z axis by distance L_approach:
-    approach_origin_ = grasp_origin_ - gripper_b_des_*L_approach_; 
+    approach_origin_ = grasp_origin_ - gripper_b_des_*L_approach_;
     a_gripper_approach_.translation() = approach_origin_;
-    
+
     // after have cylinder grasped, move purely upwards by z_depart:
     depart_origin_ = grasp_origin_ + gripper_n_des_*z_depart_;
     a_gripper_depart_.translation() = depart_origin_;
-    
+
     //open the gripper:
     gripper_publisher.publish(gripper_open);
-    
+
     //start w/ a jnt-space move from current pose to approach pose:
     int planner_rtn_code;
     des_gripper_approach_pose.header.frame_id = "torso";
     des_gripper_approach_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_approach_);
     planner_rtn_code = g_arm_motion_commander_ptr->rt_arm_plan_path_current_to_goal_pose(des_gripper_approach_pose);
-    
+
     //try to move here:
     g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
-    
+
     //slide to can:
     des_gripper_grasp_pose.header.frame_id = "torso";
     des_gripper_grasp_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_grasp_);
     planner_rtn_code = g_arm_motion_commander_ptr->rt_arm_plan_path_current_to_goal_pose(des_gripper_grasp_pose);
     g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
-    
+
     //close the gripper:
     gripper_publisher.publish(gripper_close);
     //wait for gripper to close:
     ros::Duration(2.0).sleep();
-    
+
     //depart vertically:
     des_gripper_depart_pose.header.frame_id = "torso";
     des_gripper_depart_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_depart_);

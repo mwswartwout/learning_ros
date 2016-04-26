@@ -426,9 +426,10 @@ void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped sta
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
     }
     //now cruise for distance cruise_distance at const speed
-    speed_des = speed_max_;
+    speed_des = -speed_max_;
     des_state.twist.twist.linear.x = speed_des;
     double t_cruise = cruise_distance / speed_max_;
     int npts_cruise = round(t_cruise / dt_);
@@ -440,6 +441,7 @@ void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped sta
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1.5-speed_des: %f", speed_des);
     }
     //ramp down:
     for (int i = 0; i < npts_ramp; i++) {
@@ -450,6 +452,7 @@ void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped sta
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
     }
     //make sure the last state is precisely where requested, and at rest:
     des_state.pose.pose = end_pose.pose;
@@ -499,6 +502,7 @@ void TrajBuilder::build_triangular_backward_traj(geometry_msgs::PoseStamped star
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
     }
     //ramp down:
     for (int i = 0; i < npts_ramp; i++) {
@@ -509,6 +513,7 @@ void TrajBuilder::build_triangular_backward_traj(geometry_msgs::PoseStamped star
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
     }
     //make sure the last state is precisely where requested, and at rest:
     des_state.pose.pose = end_pose.pose;

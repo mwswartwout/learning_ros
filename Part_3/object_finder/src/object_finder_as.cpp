@@ -141,7 +141,7 @@ void ObjectFinder::filter_kinect_cloud() {
     ROS_INFO_STREAM("X filtered cloud has " << temp_cloud->size() << " points");
     // Set properties of can_cloud
     //can_cloud->points.resize(indices.size());
-    //can_cloud->header.frame_id = "base_link";
+    can_cloud->header.frame_id = "base_link";
 
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color

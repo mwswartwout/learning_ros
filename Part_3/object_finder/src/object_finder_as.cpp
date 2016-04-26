@@ -18,8 +18,8 @@
 #define GREEN 33
 #define BLUE 49
 #define COLOR_ERR 40
-#define MIN_X .1
-#define MAX_X .2
+#define MIN_X .3
+#define MAX_X .7
 
 class ObjectFinder {
 private:

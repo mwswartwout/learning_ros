@@ -7,11 +7,11 @@
   <!-- load the model "starting_pen" into Gazebo -->
   <node name="spawn_sdf" pkg="gazebo_ros" type="spawn_model" args="-file $(find exmpl_models)/starting_pen/model.sdf -sdf -model starting_pen -y -5" />
   
-  <node name="mobot_pub_des_state_startup" pkg="mobot_pub_des_state" type="mobot_pub_des_state_startup"/>
+  <node name="mobot_pub_des_state_startup" pkg="mobot_pub_des_state" type="mobot_pub_des_state_startup" output="screen"/>
 
-  <!--node name="lin_steering_wrt_odom" pkg="lin_steering" type="lin_steering_wrt_odom"/-->
-  <node name="open_loop_controller" pkg="mobot_pub_des_state" type="open_loop_controller" />
+  <!--node name="lin_steering_wrt_odom" pkg="lin_steering" type="lin_steering_wrt_odom" output="screen"/-->
+  <node name="open_loop_controller" pkg="mobot_pub_des_state" type="open_loop_controller" output="screen"/>
 
-  <node name="navigator" pkg="navigator" type="navigator"/>
+  <node name="navigator" pkg="navigator" type="navigator" output="screen"/>
 
 </launch>

@@ -590,7 +590,7 @@ void TrajBuilder::build_point_and_go_traj(geometry_msgs::PoseStamped start_pose,
     double des_psi = min_dang(atan2(dy, dx)); //heading to point towards goal pose
     ROS_INFO("desired heading to subgoal = %f", des_psi);
 
-    if(des_psi > 170/180*M_PI || des_psi < -170/180*M_PI) {
+    if(des_psi > 170.0/180.0*M_PI || des_psi < -170.0/180.0*M_PI) {
          //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
         //  achieve this pose with a spin move before proceeding to subgoal with translational
         //  motion

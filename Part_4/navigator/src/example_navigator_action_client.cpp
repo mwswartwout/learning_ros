@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
      
     navigator::navigatorGoal navigation_goal;
     
-    while(true) {
+    while(ros::ok()) {
     	int WHERE;
     	cout << "1: HOME 2: TABLE 3: COORDS" << endl;
     	cin >> WHERE;
@@ -69,8 +69,8 @@ int main(int argc, char** argv) {
     	}
 
 	    geometry_msgs::PoseStamped desired_pose;
-	    desired_pose.pose.position.x = 0.5;
-	    desired_pose.pose.position.y = 0.5;
+	    desired_pose.pose.position.x = 0;
+	    desired_pose.pose.position.y = 2;
 	    desired_pose.pose.position.z = 0;
 	    desired_pose.pose.orientation.x = 0;
 	    desired_pose.pose.orientation.y = 0;

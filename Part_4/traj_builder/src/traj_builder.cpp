@@ -393,7 +393,7 @@ void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped sta
     double y_end = end_pose.pose.position.y;
     double dx = x_end - x_start;
     double dy = y_end - y_start;
-    double psi_des = -atan2(dy, dx);
+    double psi_des = M_PI-atan2(dy, dx);
     double trip_len = sqrt(dx * dx + dy * dy);
     double t_ramp = speed_max_ / accel_max_;
     double ramp_up_dist = 0.5 * accel_max_ * t_ramp*t_ramp;
@@ -470,7 +470,7 @@ void TrajBuilder::build_triangular_backward_traj(geometry_msgs::PoseStamped star
     double y_end = end_pose.pose.position.y;
     double dx = x_end - x_start;
     double dy = y_end - y_start;
-    double psi_des = -atan2(dy, dx);
+    double psi_des = M_PI-atan2(dy, dx);
     nav_msgs::Odometry des_state;
     des_state.header = start_pose.header; //really, want to copy the frame_id
     des_state.pose.pose = start_pose.pose; //start from here
@@ -594,18 +594,19 @@ void TrajBuilder::build_point_and_go_traj(geometry_msgs::PoseStamped start_pose,
          //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
         //  achieve this pose with a spin move before proceeding to subgoal with translational
         //  motion
+		ROS_INFO("Using backward ...");
         bridge_pose = start_pose;
         bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(M_PI - des_psi);
         ROS_INFO("building reorientation trajectory");
         build_spin_traj(start_pose, bridge_pose, vec_of_states); //build trajectory to reorient
         //start next segment where previous segment left off
-        bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(des_psi);
         ROS_INFO("building translational trajectory");
         build_backward_traj(bridge_pose, end_pose, vec_of_states);    
     } else {
          //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
         //  achieve this pose with a spin move before proceeding to subgoal with translational
         //  motion
+		ROS_INFO("Using forward ...");
         bridge_pose = start_pose;
         bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(des_psi);
         ROS_INFO("building reorientation trajectory");

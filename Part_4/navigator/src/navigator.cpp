@@ -115,7 +115,7 @@ int Navigator::navigate_to_table() {
     path_srv.request.path.poses.push_back(pose_stamped);
 
     //repeat (x,y) with new heading:
-    pose_stamped.pose.orientation = convertPlanarPhi2Quaternion(0); 
+    pose_stamped.pose.orientation = convertPlanarPhi2Quaternion(1.57); 
     path_srv.request.path.poses.push_back(pose_stamped);
     
     client.call(path_srv);

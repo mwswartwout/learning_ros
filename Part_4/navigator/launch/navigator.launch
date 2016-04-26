@@ -9,7 +9,8 @@
   
   <node name="mobot_pub_des_state_startup" pkg="mobot_pub_des_state" type="mobot_pub_des_state_startup"/>
 
-  <node name="lin_steering_wrt_odom" pkg="lin_steering" type="lin_steering_wrt_odom"/>
+  <!--node name="lin_steering_wrt_odom" pkg="lin_steering" type="lin_steering_wrt_odom"/-->
+  <node name="open_loop_controller" pkg="mobot_pub_des_state" type="open_loop_controller" />
 
   <node name="navigator" pkg="navigator" type="navigator"/>
 

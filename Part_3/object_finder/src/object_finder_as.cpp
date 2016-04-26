@@ -189,7 +189,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
     if (can_exists()) {
         centroid = pclUtils_.compute_centroid(can_cloud);
 
-        object_pose.header.frame_id = "base_link";
+        object_pose.header.frame_id = can_cloud->header.frame_id;
         object_pose.pose.position.x = centroid(0);
         object_pose.pose.position.y = centroid(1);
         object_pose.pose.position.z = surface_height;

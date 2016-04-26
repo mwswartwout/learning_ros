@@ -150,7 +150,7 @@ void ObjectFinder::filter_kinect_cloud() {
     for (unsigned i = 0; i < temp_cloud->size(); i++) {
         color = temp_cloud->points[i].getRGBVector3i();
         if (abs(color(0) - RED) < COLOR_ERR && abs(color(1) - GREEN) < COLOR_ERR && abs(color(2) - BLUE) < COLOR_ERR) {
-            can_cloud->points.push_back(temp_cloud->points[i];
+            can_cloud->points.push_back(temp_cloud->points[i]);
         }
     }
     ROS_INFO_STREAM("Final can cloud has " << can_cloud->size() << " points");

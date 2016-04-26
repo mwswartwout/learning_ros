@@ -1011,7 +1011,7 @@ void PclUtils::kinectCB(const sensor_msgs::PointCloud2ConstPtr& cloud) {
     }
     //pcl::io::savePCDFileASCII ("snapshot.pcd", *g_pclKinect);
     //ROS_INFO("saved PCD image consisting of %d data points to snapshot.pcd",(int) g_pclKinect->points.size ());
-    ROS_INFO("Exiting kinectCB...");
+    //ROS_INFO("Exiting kinectCB...");
 }
 
 // this callback wakes up when a new "selected Points" message arrives

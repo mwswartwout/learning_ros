@@ -206,6 +206,7 @@ void DesStatePublisher::pub_next_state() {
             } else { //no new goal? stay halted in this mode 
                 // by simply reiterating the last state sent (should have zero vel)
                 desired_state_publisher_.publish(seg_end_state_);
+                // TODO add publishing of return value to indicate trajectory was accomplished
             }
             break;
 

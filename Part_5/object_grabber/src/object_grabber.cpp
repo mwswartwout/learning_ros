@@ -163,6 +163,7 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     int planner_rtn_code;
     des_gripper_approach_pose.header.frame_id = "torso";
     des_gripper_approach_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_approach_);
+    des_gripper_approach_pose.pose.orientation = object_transformed_pose.pose.orientation;
     planner_rtn_code = g_arm_motion_commander_ptr->rt_arm_plan_path_current_to_goal_pose(des_gripper_approach_pose);
 
     //try to move here:
@@ -171,6 +172,7 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     //slide to can:
     des_gripper_grasp_pose.header.frame_id = "torso";
     des_gripper_grasp_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_grasp_);
+    des_gripper_grasp_pose.pose.orientation = object_transformed_pose.pose.orientation;
     planner_rtn_code = g_arm_motion_commander_ptr->rt_arm_plan_path_current_to_goal_pose(des_gripper_grasp_pose);
     g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
 

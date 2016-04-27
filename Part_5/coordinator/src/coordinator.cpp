@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
     ROS_INFO("sending navigation goal: TABLE");
     navigation_goal.location_code=navigator::navigatorGoal::TABLE; //send robot to TABLE
         navigator_ac.sendGoal(navigation_goal,&navigatorDoneCb); // we could also name additional callback functions here, if desired
-        finished_before_timeout = navigator_ac.waitForResult(ros::Duration(30.0));
+        finished_before_timeout = navigator_ac.waitForResult(ros::Duration(60.0));
         //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
         if (!finished_before_timeout) {
             ROS_WARN("giving up waiting on result ");
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
     //try to find the object:
         object_finder_ac.sendGoal(object_finder_goal,&objectFinderDoneCb); 
         //decide how long we will wait
-        finished_before_timeout = object_finder_ac.waitForResult(ros::Duration(5.0));
+        finished_before_timeout = object_finder_ac.waitForResult(ros::Duration(10.0));
         //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
         if (!finished_before_timeout) {
             ROS_WARN("giving up waiting on result ");
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
     ROS_INFO("sending goal to grab object: ");
         object_grabber_ac.sendGoal(object_grabber_goal,&objectGrabberDoneCb); 
         //decide how long to wait...
-        finished_before_timeout = object_grabber_ac.waitForResult(ros::Duration(40.0));
+        finished_before_timeout = object_grabber_ac.waitForResult(ros::Duration(80.0));
 
         if (!finished_before_timeout) {
             ROS_WARN("giving up waiting on result; quitting ");
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
     ROS_INFO("sending navigation goal: HOME");
     navigation_goal.location_code=navigator::navigatorGoal::HOME; //send robot to TABLE
         navigator_ac.sendGoal(navigation_goal,&navigatorDoneCb); // we could also name additional callback functions here, if desired
-        finished_before_timeout = navigator_ac.waitForResult(ros::Duration(30.0));
+        finished_before_timeout = navigator_ac.waitForResult(ros::Duration(60.0));
         //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
         if (!finished_before_timeout) {
             ROS_WARN("giving up waiting on result ");

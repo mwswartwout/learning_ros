@@ -418,38 +418,41 @@ void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped sta
     //ramp up;
     for (int i = 0; i < npts_ramp; i++) {
         t += dt_;
-        speed_des = accel_max_*t;
-        des_state.twist.twist.linear.x = -speed_des; //update speed
+        speed_des = -accel_max_*t;
+        des_state.twist.twist.linear.x = speed_des; //update speed
         //update positions
         x_des = x_start - 0.5 * accel_max_ * t * t * cos(psi_des);
         y_des = y_start - 0.5 * accel_max_ * t * t * sin(psi_des);
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
     }
     //now cruise for distance cruise_distance at const speed
-    speed_des = speed_max_;
+    speed_des = -speed_max_;
     des_state.twist.twist.linear.x = speed_des;
     double t_cruise = cruise_distance / speed_max_;
     int npts_cruise = round(t_cruise / dt_);
     ROS_INFO("t_cruise = %f; npts_cruise = %d",t_cruise,npts_cruise);
     for (int i = 0; i < npts_cruise; i++) {
         //Euler one-step integration
-        x_des -= speed_des * dt_ * cos(psi_des);
-        y_des -= speed_des * dt_ * sin(psi_des);
+        x_des += speed_des * dt_ * cos(psi_des);
+        y_des += speed_des * dt_ * sin(psi_des);
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1.5-speed_des: %f", speed_des);
     }
     //ramp down:
     for (int i = 0; i < npts_ramp; i++) {
         speed_des += accel_max_*dt_; //Euler one-step integration
         des_state.twist.twist.linear.x = speed_des;
-        x_des -= speed_des * dt_ * cos(psi_des); //Euler one-step integration
-        y_des -= speed_des * dt_ * sin(psi_des); //Euler one-step integration        
+        x_des += speed_des * dt_ * cos(psi_des); //Euler one-step integration
+        y_des += speed_des * dt_ * sin(psi_des); //Euler one-step integration        
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
     }
     //make sure the last state is precisely where requested, and at rest:
     des_state.pose.pose = end_pose.pose;
@@ -491,24 +494,26 @@ void TrajBuilder::build_triangular_backward_traj(geometry_msgs::PoseStamped star
     //ramp up;
     for (int i = 0; i < npts_ramp; i++) {
         t += dt_;
-        speed_des = accel_max_*t;
-        des_state.twist.twist.linear.x = -speed_des; //update speed
+        speed_des = -accel_max_*t;
+        des_state.twist.twist.linear.x = speed_des; //update speed
         //update positions
         x_des = x_start - 0.5 * accel_max_ * t * t * cos(psi_des);
         y_des = y_start - 0.5 * accel_max_ * t * t * sin(psi_des);
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
     }
     //ramp down:
     for (int i = 0; i < npts_ramp; i++) {
         speed_des += accel_max_*dt_; //Euler one-step integration
         des_state.twist.twist.linear.x = speed_des;
-        x_des -= speed_des * dt_ * cos(psi_des); //Euler one-step integration
-        y_des -= speed_des * dt_ * sin(psi_des); //Euler one-step integration        
+        x_des += speed_des * dt_ * cos(psi_des); //Euler one-step integration
+        y_des += speed_des * dt_ * sin(psi_des); //Euler one-step integration        
         des_state.pose.pose.position.x = x_des;
         des_state.pose.pose.position.y = y_des;
         vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
     }
     //make sure the last state is precisely where requested, and at rest:
     des_state.pose.pose = end_pose.pose;

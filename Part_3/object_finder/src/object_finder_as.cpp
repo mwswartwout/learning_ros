@@ -16,7 +16,7 @@
 #define RED 96
 #define GREEN 33
 #define BLUE 49
-#define COLOR_ERR 40
+#define COLOR_ERR 60
 #define MIN_X .3
 #define MAX_X .64
 

@@ -184,6 +184,7 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     //depart vertically:
     des_gripper_depart_pose.header.frame_id = "torso";
     des_gripper_depart_pose.pose = g_arm_motion_commander_ptr->transformEigenAffine3dToPose(a_gripper_depart_);
+    des_gripper_depart_pose.pose.orientation = object_transformed_pose.pose.orientation;
     planner_rtn_code = g_arm_motion_commander_ptr->rt_arm_plan_path_current_to_goal_pose(des_gripper_depart_pose);
     g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
 } 

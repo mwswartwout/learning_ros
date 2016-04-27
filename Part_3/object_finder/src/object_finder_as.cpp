@@ -161,7 +161,7 @@ void ObjectFinder::publish_can_cloud() {
     sensor_msgs::PointCloud2 ros_can_cloud;
     pcl::toROSMsg(*can_cloud, ros_can_cloud);
 
-    while (ros::ok) {
+    while (ros::ok()) {
         pubCloud.publish(ros_can_cloud); // will not need to keep republishing if display setting is persistent
         ros::spinOnce();
         ros::Duration(0.1).sleep();

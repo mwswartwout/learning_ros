@@ -358,6 +358,171 @@ void TrajBuilder::build_triangular_travel_traj(geometry_msgs::PoseStamped start_
     vec_of_states.push_back(des_state);
 }
 
+
+//fnc to build a pure straight-line motion trajectory
+//determines if a triangular or trapezoidal velocity profile is needed
+void TrajBuilder::build_backward_traj(geometry_msgs::PoseStamped start_pose,
+        geometry_msgs::PoseStamped end_pose,
+        std::vector<nav_msgs::Odometry> &vec_of_states) {
+    //decide if triangular or trapezoidal profile:
+    double x_start = start_pose.pose.position.x;
+    double y_start = start_pose.pose.position.y;
+    double x_end = end_pose.pose.position.x;
+    double y_end = end_pose.pose.position.y;
+    double dx = x_end - x_start;
+    double dy = y_end - y_start;
+    double trip_len = sqrt(dx * dx + dy * dy);
+    double ramp_up_dist = 0.5 * speed_max_ * speed_max_ / alpha_max_;
+    ROS_INFO("trip len = %f", trip_len);
+    if (trip_len < 2.0 * ramp_up_dist) { //length is too short for trapezoid
+        build_triangular_backward_traj(start_pose, end_pose, vec_of_states);
+    } else {
+        build_trapezoidal_backward_traj(start_pose, end_pose, vec_of_states);
+    }
+}
+
+//given that straight-line, trapezoidal velocity profile trajectory is needed,
+// construct the sequence of states (positions and velocities) to achieve the
+// desired motion, subject to speed and acceleration constraints
+void TrajBuilder::build_trapezoidal_backward_traj(geometry_msgs::PoseStamped start_pose,
+        geometry_msgs::PoseStamped end_pose,
+        std::vector<nav_msgs::Odometry> &vec_of_states) {
+    double x_start = start_pose.pose.position.x;
+    double y_start = start_pose.pose.position.y;
+    double x_end = end_pose.pose.position.x;
+    double y_end = end_pose.pose.position.y;
+    double dx = x_end - x_start;
+    double dy = y_end - y_start;
+    double psi_des = M_PI-atan2(dy, dx);
+    double trip_len = sqrt(dx * dx + dy * dy);
+    double t_ramp = speed_max_ / accel_max_;
+    double ramp_up_dist = 0.5 * accel_max_ * t_ramp*t_ramp;
+    double cruise_distance = trip_len - 2.0 * ramp_up_dist; //distance to travel at v_max 
+    ROS_INFO("t_ramp =%f",t_ramp);
+    ROS_INFO("ramp-up dist = %f",ramp_up_dist);
+    ROS_INFO("cruise distance = %f",cruise_distance);
+    //start ramping up:
+    nav_msgs::Odometry des_state;
+    des_state.header = start_pose.header; //really, want to copy the frame_id
+    des_state.pose.pose = start_pose.pose; //start from here
+    des_state.twist.twist = halt_twist_; // insist on starting from rest
+    int npts_ramp = round(t_ramp / dt_);
+    double x_des = x_start; //start from here
+    double y_des = y_start;
+    double speed_des = 0.0;
+    des_state.twist.twist.angular.z = 0.0; //omega_des; will not change
+    des_state.pose.pose.orientation = convertPlanarPsi2Quaternion(psi_des); //constant
+    // orientation of des_state will not change; only position and twist
+    
+    double t = 0.0;
+    //ramp up;
+    for (int i = 0; i < npts_ramp; i++) {
+        t += dt_;
+        speed_des = -accel_max_*t;
+        des_state.twist.twist.linear.x = speed_des; //update speed
+        //update positions
+        x_des = x_start - 0.5 * accel_max_ * t * t * cos(psi_des);
+        y_des = y_start - 0.5 * accel_max_ * t * t * sin(psi_des);
+        des_state.pose.pose.position.x = x_des;
+        des_state.pose.pose.position.y = y_des;
+        vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
+    }
+    //now cruise for distance cruise_distance at const speed
+    speed_des = -speed_max_;
+    des_state.twist.twist.linear.x = speed_des;
+    double t_cruise = cruise_distance / speed_max_;
+    int npts_cruise = round(t_cruise / dt_);
+    ROS_INFO("t_cruise = %f; npts_cruise = %d",t_cruise,npts_cruise);
+    for (int i = 0; i < npts_cruise; i++) {
+        //Euler one-step integration
+        x_des += speed_des * dt_ * cos(psi_des);
+        y_des += speed_des * dt_ * sin(psi_des);
+        des_state.pose.pose.position.x = x_des;
+        des_state.pose.pose.position.y = y_des;
+        vec_of_states.push_back(des_state);
+        ROS_INFO("1.5-speed_des: %f", speed_des);
+    }
+    //ramp down:
+    for (int i = 0; i < npts_ramp; i++) {
+        speed_des += accel_max_*dt_; //Euler one-step integration
+        des_state.twist.twist.linear.x = speed_des;
+        x_des += speed_des * dt_ * cos(psi_des); //Euler one-step integration
+        y_des += speed_des * dt_ * sin(psi_des); //Euler one-step integration        
+        des_state.pose.pose.position.x = x_des;
+        des_state.pose.pose.position.y = y_des;
+        vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
+    }
+    //make sure the last state is precisely where requested, and at rest:
+    des_state.pose.pose = end_pose.pose;
+    //but final orientation will follow from point-and-go direction
+    des_state.pose.pose.orientation = convertPlanarPsi2Quaternion(psi_des);
+    des_state.twist.twist = halt_twist_; // insist on starting from rest
+    vec_of_states.push_back(des_state);
+}
+
+// constructs straight-line trajectory with triangular velocity profile,
+// respective limits of velocity and accel
+void TrajBuilder::build_triangular_backward_traj(geometry_msgs::PoseStamped start_pose,
+        geometry_msgs::PoseStamped end_pose,
+        std::vector<nav_msgs::Odometry> &vec_of_states) {
+    double x_start = start_pose.pose.position.x;
+    double y_start = start_pose.pose.position.y;
+    double x_end = end_pose.pose.position.x;
+    double y_end = end_pose.pose.position.y;
+    double dx = x_end - x_start;
+    double dy = y_end - y_start;
+    double psi_des = M_PI-atan2(dy, dx);
+    nav_msgs::Odometry des_state;
+    des_state.header = start_pose.header; //really, want to copy the frame_id
+    des_state.pose.pose = start_pose.pose; //start from here
+    des_state.twist.twist = halt_twist_; // insist on starting from rest
+    double trip_len = sqrt(dx * dx + dy * dy);
+    double t_ramp = sqrt(trip_len / accel_max_);
+    int npts_ramp = round(t_ramp / dt_);
+    double v_peak = accel_max_*t_ramp; // could consider special cases for reverse motion
+    double d_vel = alpha_max_*dt_; // incremental velocity changes for ramp-up
+
+    double x_des = x_start; //start from here
+    double y_des = y_start;
+    double speed_des = 0.0;
+    des_state.twist.twist.angular.z = 0.0; //omega_des; will not change
+    des_state.pose.pose.orientation = convertPlanarPsi2Quaternion(psi_des); //constant
+    // orientation of des_state will not change; only position and twist
+    double t = 0.0;
+    //ramp up;
+    for (int i = 0; i < npts_ramp; i++) {
+        t += dt_;
+        speed_des = -accel_max_*t;
+        des_state.twist.twist.linear.x = speed_des; //update speed
+        //update positions
+        x_des = x_start - 0.5 * accel_max_ * t * t * cos(psi_des);
+        y_des = y_start - 0.5 * accel_max_ * t * t * sin(psi_des);
+        des_state.pose.pose.position.x = x_des;
+        des_state.pose.pose.position.y = y_des;
+        vec_of_states.push_back(des_state);
+        ROS_INFO("1-speed_des: %f", speed_des);
+    }
+    //ramp down:
+    for (int i = 0; i < npts_ramp; i++) {
+        speed_des += accel_max_*dt_; //Euler one-step integration
+        des_state.twist.twist.linear.x = speed_des;
+        x_des += speed_des * dt_ * cos(psi_des); //Euler one-step integration
+        y_des += speed_des * dt_ * sin(psi_des); //Euler one-step integration        
+        des_state.pose.pose.position.x = x_des;
+        des_state.pose.pose.position.y = y_des;
+        vec_of_states.push_back(des_state);
+        ROS_INFO("2-speed_des: %f", speed_des);
+    }
+    //make sure the last state is precisely where requested, and at rest:
+    des_state.pose.pose = end_pose.pose;
+    //but final orientation will follow from point-and-go direction
+    des_state.pose.pose.orientation = convertPlanarPsi2Quaternion(psi_des);
+    des_state.twist.twist = halt_twist_; // insist on starting from rest
+    vec_of_states.push_back(des_state);
+}
+
 void TrajBuilder::build_triangular_spin_traj(geometry_msgs::PoseStamped start_pose,
         geometry_msgs::PoseStamped end_pose,
         std::vector<nav_msgs::Odometry> &vec_of_states) {
@@ -427,16 +592,32 @@ void TrajBuilder::build_point_and_go_traj(geometry_msgs::PoseStamped start_pose,
     double y_end = end_pose.pose.position.y;
     double dx = x_end - x_start;
     double dy = y_end - y_start;
-    double des_psi = atan2(dy, dx); //heading to point towards goal pose
+    double des_psi = min_dang(atan2(dy, dx)); //heading to point towards goal pose
     ROS_INFO("desired heading to subgoal = %f", des_psi);
-    //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
-    //  achieve this pose with a spin move before proceeding to subgoal with translational
-    //  motion
-    bridge_pose = start_pose;
-    bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(des_psi);
-    ROS_INFO("building reorientation trajectory");
-    build_spin_traj(start_pose, bridge_pose, vec_of_states); //build trajectory to reorient
-    //start next segment where previous segment left off
-    ROS_INFO("building translational trajectory");
-    build_travel_traj(bridge_pose, end_pose, vec_of_states);
+
+    if(des_psi > 170.0/180.0*M_PI || des_psi < -170.0/180.0*M_PI) {
+         //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
+        //  achieve this pose with a spin move before proceeding to subgoal with translational
+        //  motion
+		ROS_INFO("Using backward ...");
+        bridge_pose = start_pose;
+        bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(M_PI - des_psi);
+        ROS_INFO("building reorientation trajectory");
+        build_spin_traj(start_pose, bridge_pose, vec_of_states); //build trajectory to reorient
+        //start next segment where previous segment left off
+        ROS_INFO("building translational trajectory");
+        build_backward_traj(bridge_pose, end_pose, vec_of_states);    
+    } else {
+         //bridge pose: state of robot with start_x, start_y, but pointing at next subgoal
+        //  achieve this pose with a spin move before proceeding to subgoal with translational
+        //  motion
+		ROS_INFO("Using forward ...");
+        bridge_pose = start_pose;
+        bridge_pose.pose.orientation = convertPlanarPsi2Quaternion(des_psi);
+        ROS_INFO("building reorientation trajectory");
+        build_spin_traj(start_pose, bridge_pose, vec_of_states); //build trajectory to reorient
+        //start next segment where previous segment left off
+        ROS_INFO("building translational trajectory");
+        build_travel_traj(bridge_pose, end_pose, vec_of_states);     
+    }
 }

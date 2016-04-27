@@ -12,7 +12,7 @@
 #include<object_finder/objectFinderAction.h>
 
 #define CAN_HEIGHT .13
-#define MIN_CLOUD_SIZE 100
+#define MIN_CLOUD_SIZE 1
 #define RED 96
 #define GREEN 33
 #define BLUE 49
@@ -151,6 +151,7 @@ void ObjectFinder::filter_kinect_cloud() {
     pass.setFilterLimits(MIN_Y, MAX_Y);
     pass.filter(*can_cloud);
     temp_cloud->clear();
+    ROS_INFO_STREAM("Y filtered cloud has " << can_cloud->size() << " points"):
 
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color

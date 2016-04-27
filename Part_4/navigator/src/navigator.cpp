@@ -86,6 +86,7 @@ int Navigator::navigate_home() {
     path_srv.request.path.poses.push_back(pose_stamped);
     
     client.call(path_srv);
+    ros::Duration(10).sleep();
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED; //just say we were successful
 } 
 int Navigator::navigate_to_table() {
@@ -119,6 +120,7 @@ int Navigator::navigate_to_table() {
     path_srv.request.path.poses.push_back(pose_stamped);
     
     client.call(path_srv);
+    ros::Duration(10).sleep();
     // TODO add waiting for service call to return success
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED; //just say we were successful
 }
@@ -138,7 +140,7 @@ int Navigator::navigate_to_pose(geometry_msgs::PoseStamped goal_pose) {
     path_srv.request.path.poses.push_back(goal_pose);
     
     client.call(path_srv);
-
+    ros::Duration(10).sleep();
     return navigator::navigatorResult::DESIRED_POSE_ACHIEVED;
 }
 

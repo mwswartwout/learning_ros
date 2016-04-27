@@ -19,6 +19,8 @@
 #define COLOR_ERR 60
 #define MIN_X .3
 #define MAX_X .64
+#define MIN_Y -0.3
+#define MAX_Y 0.3
 
 class ObjectFinder {
 private:
@@ -143,16 +145,25 @@ void ObjectFinder::filter_kinect_cloud() {
     //can_cloud->points.resize(indices.size());
     can_cloud->header.frame_id = "base_link";
 
+    ROS_INFO("Filtering cloud by y distance");
+    pass.setInputCloud(temp_cloud);
+    pass.setFilterFieldName("y");
+    pass.setFilterLimits(MIN_Y, MAX_Y);
+    pass.filter(*can_cloud);
+    temp_cloud->clear();
+
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color
     ROS_INFO("Filtering cloud by color");
     Eigen::Vector3i color;
-    for (unsigned i = 0; i < temp_cloud->size(); i++) {
-        color = temp_cloud->points[i].getRGBVector3i();
+    for (unsigned i = 0; i < can_cloud->size(); i++) {
+        color = can_cloud->points[i].getRGBVector3i();
         if (abs(color(0) - RED) < COLOR_ERR && abs(color(1) - GREEN) < COLOR_ERR && abs(color(2) - BLUE) < COLOR_ERR) {
-            can_cloud->points.push_back(temp_cloud->points[i]);
+            temp_cloud->points.push_back(can_cloud->points[i]);
         }
     }
+    can_cloud->clear();
+    can_cloud = temp_cloud;
     ROS_INFO_STREAM("Final can cloud has " << can_cloud->size() << " points");
 }
 

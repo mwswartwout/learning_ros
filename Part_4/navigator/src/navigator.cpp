@@ -106,7 +106,7 @@ int Navigator::navigate_to_table() {
     pose_stamped.header.frame_id = "world";
     geometry_msgs::Pose pose;
 
-    pose.position.x = 2.0; // say desired x-coord is 3
+    pose.position.x = 2.7; // say desired x-coord is 3
     pose.position.y = 0.0;
     pose.position.z = 0.0; // let's hope so!
     quat = convertPlanarPhi2Quaternion(0);

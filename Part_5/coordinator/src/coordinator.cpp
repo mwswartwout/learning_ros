@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 
 
     //  IF HERE, START THE FETCH BEHAVIOR!!
-    
+    /*
     ROS_INFO("sending navigation goal: TABLE");
     navigation_goal.location_code=navigator::navigatorGoal::TABLE; //send robot to TABLE
         navigator_ac.sendGoal(navigation_goal,&navigatorDoneCb); // we could also name additional callback functions here, if desired
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
             return 1;
         }
                 
-                
+      */
     //assume we have reached the table; look for the Coke can:
     object_finder_goal.object_id=object_finder::objectFinderGoal::COKE_CAN_UPRIGHT; //specify object of interest
     object_finder_goal.known_surface_ht=true; //we'll say we know the table height
@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
             ROS_WARN("failed to grab object; giving up!");
             return 1;
         }
-        
+        /*
         //if here, belief is that we are holding the Coke; return home            
     ROS_INFO("sending navigation goal: HOME");
     navigation_goal.location_code=navigator::navigatorGoal::HOME; //send robot to TABLE
@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
             return 1;
         }
   ROS_INFO("Done fetching! Run me again?");    
-             }
+       */      }
    // }
     return 0;
 }

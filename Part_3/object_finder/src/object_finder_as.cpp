@@ -151,7 +151,7 @@ void ObjectFinder::filter_kinect_cloud() {
     pass.setFilterLimits(MIN_Y, MAX_Y);
     pass.filter(*can_cloud);
     temp_cloud->clear();
-    ROS_INFO_STREAM("Y filtered cloud has " << can_cloud->size() << " points"):
+    ROS_INFO_STREAM("Y filtered cloud has " << can_cloud->size() << " points");
 
     // Now add points that passed the height filter into the can_cloud
     // But only add them if they are approximately red in color

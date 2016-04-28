@@ -45,7 +45,7 @@ private:
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr kinect_transformed_cloud;
     ros::Publisher pubCloud;
-    Eigen::Vector3f centroid;
+    //Eigen::Vector3f centroid;
     float surface_height;
 
     //specialized function to find an upright Coke can on known height of horizontal surface;
@@ -205,7 +205,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
     transform_kinect_cloud();
     filter_kinect_cloud();
     if (can_exists()) {
-        centroid = pclUtils_.compute_centroid(can_cloud);
+        Eigen::Vector3f centroid = pclUtils_.compute_centroid(can_cloud);
 
         object_pose.header.frame_id = can_cloud->header.frame_id;
         object_pose.pose.position.x = centroid(0);

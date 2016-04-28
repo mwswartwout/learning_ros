@@ -68,7 +68,7 @@ ObjectGrabber::ObjectGrabber(ros::NodeHandle* nodehandle): nh_(*nodehandle),
 {
     ROS_INFO("in constructor of ObjectGrabber");
     // do any other desired initializations here, as needed
-    gripper_table_z_ = -0.053; //gripper origin height above torso for grasp of cyl on table
+    gripper_table_z_ = -0.145; //gripper origin height above torso for grasp of cyl on table
     L_approach_ = 0.25; //distance to slide towards cylinder
     z_depart_ = 0.2; //height to lift cylinder
     //define a gripper orientation for power-grasp approach of upright cylinder

@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     actionlib::SimpleActionClient<navigator::navigatorAction> navigator_ac("navigatorActionServer", true);
 
     // attempt to connect to the server:
-    ROS_INFO("waiting for server: ");
+    ROS_INFO("waiting for object_finder server: ");
     bool server_exists = false;
     while ((!server_exists)&&(ros::ok())) {
         server_exists = object_finder_ac.waitForServer(ros::Duration(0.5)); // 
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
     
     //do the same with the "navigator" action server
      // attempt to connect to the server:
-    ROS_INFO("waiting for server: ");
+/*    ROS_INFO("waiting for server: ");
     server_exists = false;
     while ((!server_exists)&&(ros::ok())) {
         server_exists = navigator_ac.waitForServer(ros::Duration(0.5)); // 
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
         ROS_INFO("retrying...");
     }
     ROS_INFO("connected to navigator action server"); // if here, then we connected to the server; 
-
+*/
     //specifications for what we are seeking:
     object_finder::objectFinderGoal object_finder_goal;   
     object_grabber::object_grabberGoal object_grabber_goal;
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     //assume we have reached the table; look for the Coke can:
     object_finder_goal.object_id=object_finder::objectFinderGoal::COKE_CAN_UPRIGHT; //specify object of interest
     object_finder_goal.known_surface_ht=true; //we'll say we know the table height
-    object_finder_goal.surface_ht = 0.05;  // and specify the height, relative to torso; TUNE THIS
+    object_finder_goal.surface_ht = -0.146;  // and specify the height, relative to torso; TUNE THIS
     //try to find the object:
         object_finder_ac.sendGoal(object_finder_goal, &objectFinderDoneCb);
         //decide how long we will wait
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
             return 1;
         }
      //if here, then presumably have a valid pose for object of interest; grab it!
-    object_grabber_goal.object_code = object_grabber::object_grabberGoal::COKE_CAN; //specify the object to be grabbed
+/*    object_grabber_goal.object_code = object_grabber::object_grabberGoal::COKE_CAN; //specify the object to be grabbed
     object_grabber_goal.object_frame = g_perceived_object_pose;
     ROS_INFO("sending goal to grab object: ");
         object_grabber_ac.sendGoal(object_grabber_goal, &objectGrabberDoneCb);
@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
             ROS_WARN("failed to grab object; giving up!");
             return 1;
         }
-
+*/
         /*
         //if here, belief is that we are holding the Coke; return home            
     ROS_INFO("sending navigation goal: HOME");

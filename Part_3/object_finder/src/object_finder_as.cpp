@@ -11,16 +11,16 @@
 #include <pcl/filters/passthrough.h>
 #include<object_finder/objectFinderAction.h>
 
-#define CAN_HEIGHT .13
+#define CAN_HEIGHT .23
 #define MIN_CLOUD_SIZE 1
 #define RED 96
 #define GREEN 33
 #define BLUE 49
 #define COLOR_ERR 60
 #define MIN_X .3
-#define MAX_X .64
-#define MIN_Y -0.3
-#define MAX_Y 0.3
+#define MAX_X 1.2
+#define MIN_Y -0.7
+#define MAX_Y 0.16
 
 class ObjectFinder {
 private:
@@ -34,7 +34,6 @@ private:
     
     // here are some message types to communicate with our client(s)
     object_finder::objectFinderGoal goal_; // goal message, received from client
-    object_finder::objectFinderResult result_; // put results here, to be sent back to the client when done w/ goal
     object_finder::objectFinderFeedback feedback_; // not used in this example; 
     // would need to use: as_.publishFeedback(feedback_); to send incremental feedback to the client
 
@@ -89,7 +88,7 @@ tf::StampedTransform ObjectFinder::wait_for_transform() {
         try {
             //The direction of the transform returned will be from the target_frame to the source_frame.
             //Which if applied to data, will transform data in the source_frame into the target_frame. See tf/CoordinateFrameConventions#Transform_Direction
-            tf_listener.lookupTransform("base_link", "camera_rgb_optical_frame", ros::Time(0), tf_sensor_frame_to_torso_frame);
+            tf_listener.lookupTransform("torso", "kinect_pc_frame", ros::Time(0), tf_sensor_frame_to_torso_frame);
         } catch (tf::TransformException &exception) {
             ROS_ERROR("%s", exception.what());
             tferr = true;
@@ -132,6 +131,7 @@ void ObjectFinder::filter_kinect_cloud() {
     pass.filter(*can_cloud); // Store the filtered cloud in the can_cloud container
     //ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
     ROS_INFO_STREAM("Z filtered cloud has " << can_cloud->size() << " points");
+/*
     // Now we will filter by x and store it in the temp_cloud container
     ROS_INFO("Filtering cloud by x distance");
     pass.setInputCloud(can_cloud);
@@ -162,9 +162,10 @@ void ObjectFinder::filter_kinect_cloud() {
             temp_cloud->points.push_back(can_cloud->points[i]);
         }
     }
-    can_cloud->clear();
-    can_cloud = temp_cloud;
-    can_cloud->header.frame_id = "base_link";
+    */
+    //can_cloud->clear();
+    //can_cloud = temp_cloud;
+    can_cloud->header.frame_id = "torso";
     ROS_INFO_STREAM("Final can cloud has " << can_cloud->size() << " points");
 }
 
@@ -192,9 +193,13 @@ bool ObjectFinder::can_exists() {
 }
 
 //specialized function: DUMMY...JUST RETURN A HARD-CODED POSE; FIX THIS
-bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose) {
+bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose) { 
     bool found_object=false;
+    can_cloud->clear();
+    temp_cloud->clear();
+    kinect_transformed_cloud->clear();
     pclUtils_.reset_got_kinect_cloud();
+
     wait_for_transform();
     while (!pclUtils_.got_kinect_cloud()) {
         ROS_INFO("Waiting for new point cloud...");
@@ -232,6 +237,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
 // e.g.,  "demoAction" is auto-generated from (our) base name "demo" and generic name "Action"
 void ObjectFinder::executeCB(const actionlib::SimpleActionServer<object_finder::objectFinderAction>::GoalConstPtr& goal) {
     int object_id = goal->object_id;
+    object_finder::objectFinderResult result_; // put results here, to be sent back to the client when done w/ goal
     geometry_msgs::PoseStamped object_pose;
     bool known_surface_ht = goal->known_surface_ht;
     if (known_surface_ht) {

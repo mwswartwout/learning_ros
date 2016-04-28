@@ -14,9 +14,9 @@
 #include <std_msgs/Header.h>
 #include <tf/transform_listener.h>
 
-#define X_OFFSET 0
-#define Y_OFFSET 0
-#define Z_OFFSET .5
+#define X_OFFSET -0.2
+#define Y_OFFSET -0.02
+#define Z_OFFSET 0
 
 class ObjectGrabber {
 private:
@@ -69,7 +69,7 @@ ObjectGrabber::ObjectGrabber(ros::NodeHandle* nodehandle): nh_(*nodehandle),
 {
     ROS_INFO("in constructor of ObjectGrabber");
     // do any other desired initializations here, as needed
-    gripper_table_z_ = 0.05; //gripper origin height above torso for grasp of cyl on table
+    gripper_table_z_ = 0.04; //gripper origin height above torso for grasp of cyl on table
     L_approach_ = 0.25; //distance to slide towards cylinder
     z_depart_ = 0.2; //height to lift cylinder
     //define a gripper orientation for power-grasp approach of upright cylinder
@@ -150,6 +150,10 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     grasp_origin_(0) += X_OFFSET;
     grasp_origin_(1) += Y_OFFSET;
     grasp_origin_(2) += Z_OFFSET;
+    if (grasp_origin_(2) < gripper_table_z_) {
+        ROS_WARN("Grasp origin z too low, resetting");
+        grasp_origin_(2) = gripper_table_z_;
+    }
     //grasp_origin_(2) = gripper_table_z_;//except elevate the gripper for table clearance
     a_gripper_grasp_.translation() = grasp_origin_;
 

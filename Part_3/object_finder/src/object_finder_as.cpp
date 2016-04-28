@@ -209,6 +209,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
         object_pose.pose.position.x = centroid(0);
         object_pose.pose.position.y = centroid(1);
         object_pose.pose.position.z = surface_height;
+        ROS_INFO_STREAM("Computed can centroid at (X,Y) = (" << centroid(0) << ", " << centroid(1) << ")");
         object_pose.pose.orientation.x = 0.17012;
         object_pose.pose.orientation.y = 0.664085;
         object_pose.pose.orientation.z = 0.719425;

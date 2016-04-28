@@ -56,7 +56,6 @@ private:
     void filter_kinect_cloud();
     void publish_can_cloud();
     bool can_exists();
-    void clear_everything();
 
 public:
     ObjectFinder(); //define the body of the constructor outside of class definition
@@ -195,7 +194,6 @@ bool ObjectFinder::can_exists() {
 //specialized function: DUMMY...JUST RETURN A HARD-CODED POSE; FIX THIS
 bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose) {
     bool found_object=false;
-    clear_everything();
     pclUtils_.reset_got_kinect_cloud();
     wait_for_transform();
     while (!pclUtils_.got_kinect_cloud()) {

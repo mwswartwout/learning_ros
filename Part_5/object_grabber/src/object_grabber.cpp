@@ -14,6 +14,10 @@
 #include <std_msgs/Header.h>
 #include <tf/transform_listener.h>
 
+#define X_OFFSET 0
+#define Y_OFFSET 0
+#define Z_OFFSET .5
+
 class ObjectGrabber {
 private:
     ros::NodeHandle nh_;
@@ -139,12 +143,14 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     rtn_val=g_arm_motion_commander_ptr->rt_arm_request_q_data();
 
     Eigen::Affine3d object_affine;
-    object_affine =
-     g_arm_motion_commander_ptr->transformPoseToEigenAffine3d(object_transformed_pose.pose);
+    object_affine = g_arm_motion_commander_ptr->transformPoseToEigenAffine3d(object_transformed_pose.pose);
     Eigen::Vector3d object_origin;
     object_origin = object_affine.translation();
     grasp_origin_ = object_origin; //grasp origin is same as object origin...
-    grasp_origin_(2) = gripper_table_z_;//except elevate the gripper for table clearance
+    grasp_origin_(0) += X_OFFSET;
+    grasp_origin_(1) += Y_OFFSET;
+    grasp_origin_(2) += Z_OFFSET;
+    //grasp_origin_(2) = gripper_table_z_;//except elevate the gripper for table clearance
     a_gripper_grasp_.translation() = grasp_origin_;
 
     //to slide sideways to approach, compute a pre-grasp approach pose;

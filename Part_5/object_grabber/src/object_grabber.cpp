@@ -51,8 +51,7 @@ private:
     tf::StampedTransform wait_for_transform(std_msgs::Header header);
 
 public:
-
-        ObjectGrabber(ros::NodeHandle* nodehandle); //define the body of the constructor outside of class definition
+    ObjectGrabber(ros::NodeHandle* nodehandle); //define the body of the constructor outside of class definition
 
     ~ObjectGrabber(void) {
     }
@@ -117,6 +116,8 @@ tf::StampedTransform ObjectGrabber::wait_for_transform(std_msgs::Header header) 
 }
 
 void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped object_pose) {
+    ROS_INFO("Executing vertical_cylinder_power_grasp");
+
     ROS_INFO("Waiting for transform between object_pose frame_id and torso");
     tf::StampedTransform tf_header_to_torso = wait_for_transform(object_pose.header);
 
@@ -137,6 +138,7 @@ void ObjectGrabber::vertical_cylinder_power_grasp(geometry_msgs::PoseStamped obj
     rtn_val = g_arm_motion_commander_ptr->plan_move_to_pre_pose();
 
     //send command to execute planned motion
+    ROS_INFO("Going to pre-pose");
     rtn_val=g_arm_motion_commander_ptr->rt_arm_execute_planned_path();
 
     //inquire re/ right-arm joint angles:

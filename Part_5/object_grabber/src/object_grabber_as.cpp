@@ -2,7 +2,7 @@
 // wsn, April, 2016
 // illustrates use of baxter_cart_move_as, action server called "cartMoveActionServer"
 
-#include<ros/ros.h>
+#include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/terminal_state.h>
@@ -10,7 +10,7 @@
 #include <Eigen/Eigen>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include<geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <object_grabber/object_grabberAction.h>
 #include <std_msgs/Bool.h>
 

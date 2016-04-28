@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
     //ALL SET UP; WAITING FOR TRIGGER
     //wait for the Alexa trigger:
     ROS_INFO("waiting for Alexa code: rostopic pub Alexa_codes std_msgs/UInt32 100");
-    while(ros::ok()) {
+    //while(ros::ok()) {
      /*if (!g_get_coke_trigger) {
         ros::Duration(0.5).sleep();
         ros::spinOnce();    
@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
     object_finder_goal.known_surface_ht=true; //we'll say we know the table height
     object_finder_goal.surface_ht = 0.05;  // and specify the height, relative to torso; TUNE THIS
     //try to find the object:
-        object_finder_ac.sendGoal(object_finder_goal,&objectFinderDoneCb); 
+        object_finder_ac.sendGoal(object_finder_goal, &objectFinderDoneCb);
         //decide how long we will wait
         finished_before_timeout = object_finder_ac.waitForResult(ros::Duration(10.0));
         //bool finished_before_timeout = action_client.waitForResult(); // wait forever...
@@ -175,11 +175,11 @@ int main(int argc, char** argv) {
             ROS_WARN("could not find object; quitting!");
             return 1;
         }
-     //if here, then presumably have a valid pose for object of interest; grab it!       
-        object_grabber_goal.object_code = object_grabber::object_grabberGoal::COKE_CAN; //specify the object to be grabbed 
+     //if here, then presumably have a valid pose for object of interest; grab it!
+    object_grabber_goal.object_code = object_grabber::object_grabberGoal::COKE_CAN; //specify the object to be grabbed
     object_grabber_goal.object_frame = g_perceived_object_pose;
     ROS_INFO("sending goal to grab object: ");
-        object_grabber_ac.sendGoal(object_grabber_goal,&objectGrabberDoneCb); 
+        object_grabber_ac.sendGoal(object_grabber_goal, &objectGrabberDoneCb);
         //decide how long to wait...
         finished_before_timeout = object_grabber_ac.waitForResult(ros::Duration(80.0));
 
@@ -191,6 +191,7 @@ int main(int argc, char** argv) {
             ROS_WARN("failed to grab object; giving up!");
             return 1;
         }
+
         /*
         //if here, belief is that we are holding the Coke; return home            
     ROS_INFO("sending navigation goal: HOME");
@@ -208,7 +209,7 @@ int main(int argc, char** argv) {
             return 1;
         }
   ROS_INFO("Done fetching! Run me again?");    
-       */      }
+       */   //   }
    // }
     return 0;
 }

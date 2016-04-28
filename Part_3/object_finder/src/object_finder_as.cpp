@@ -56,6 +56,7 @@ private:
     void filter_kinect_cloud();
     void publish_can_cloud();
     bool can_exists();
+    void clear_everything();
 
 public:
     ObjectFinder(); //define the body of the constructor outside of class definition
@@ -65,8 +66,6 @@ public:
     // Action Interface
     void executeCB(const actionlib::SimpleActionServer<object_finder::objectFinderAction>::GoalConstPtr& goal);
 };
-
-
 
 ObjectFinder::ObjectFinder() :
         object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1), false), pclUtils_(&nh_),
@@ -117,6 +116,7 @@ void ObjectFinder::filter_kinect_cloud() {
     // First clear all our clouds
     can_cloud->clear();
     temp_cloud->clear();
+    kinect_transformed_cloud->clear();
 
     // Save transformed kinect data into PointCloud object that we can manipulate
     ROS_INFO("Getting transformed kinect cloud");
@@ -195,10 +195,12 @@ bool ObjectFinder::can_exists() {
 //specialized function: DUMMY...JUST RETURN A HARD-CODED POSE; FIX THIS
 bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose) {
     bool found_object=false;
+    clear_everything();
     pclUtils_.reset_got_kinect_cloud();
     wait_for_transform();
     while (!pclUtils_.got_kinect_cloud()) {
         ROS_INFO("Waiting for new point cloud...");
+        ros::Duration(1.0).sleep();
     }
     transform_kinect_cloud();
     filter_kinect_cloud();

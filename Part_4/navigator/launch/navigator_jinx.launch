@@ -1,11 +1,8 @@
 <launch>
-  <include file="$(find cwru_base)/launch/start_base_jinx.launch"/>
-
+<include file="$(find cwru_base)/launch/start_base.launch"/>
   <node name="mobot_pub_des_state_startup" pkg="mobot_pub_des_state" type="mobot_pub_des_state_startup" output="screen"/>
-
   <!--node name="lin_steering_wrt_odom" pkg="lin_steering" type="lin_steering_wrt_odom" output="screen"/-->
   <node name="open_loop_controller" pkg="mobot_pub_des_state" type="open_loop_controller" output="screen"/>
-
   <node name="navigator" pkg="navigator" type="navigator" output="screen"/>
 
 </launch>

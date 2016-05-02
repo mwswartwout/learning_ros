@@ -14,8 +14,8 @@
 #include <std_msgs/Header.h>
 #include <tf/transform_listener.h>
 
-#define X_OFFSET 0
-#define Y_OFFSET 0.05
+#define X_OFFSET -0.02
+#define Y_OFFSET -0.05
 #define Z_OFFSET 0
 
 class ObjectGrabber {

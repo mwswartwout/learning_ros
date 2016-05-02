@@ -16,11 +16,11 @@
 #define RED 96
 #define GREEN 33
 #define BLUE 49
-#define COLOR_ERR 60
-#define MIN_X .3
-#define MAX_X .64
-#define MIN_Y -0.3
-#define MAX_Y 0.3
+#define COLOR_ERR 100
+#define MIN_X .1
+#define MAX_X .8
+#define MIN_Y -0.5
+#define MAX_Y 0.5
 
 class ObjectFinder {
 private:
@@ -34,7 +34,6 @@ private:
     
     // here are some message types to communicate with our client(s)
     object_finder::objectFinderGoal goal_; // goal message, received from client
-    object_finder::objectFinderResult result_; // put results here, to be sent back to the client when done w/ goal
     object_finder::objectFinderFeedback feedback_; // not used in this example; 
     // would need to use: as_.publishFeedback(feedback_); to send incremental feedback to the client
 
@@ -42,8 +41,6 @@ private:
     tf::TransformListener tf_listener;
     tf::StampedTransform tf_sensor_frame_to_torso_frame; //use this to transform sensor frame to torso frame
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr can_cloud;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr kinect_transformed_cloud;
     ros::Publisher pubCloud;
     //Eigen::Vector3f centroid;
     float surface_height;
@@ -68,9 +65,7 @@ public:
 
 ObjectFinder::ObjectFinder() :
         object_finder_as_(nh_, "objectFinderActionServer", boost::bind(&ObjectFinder::executeCB, this, _1), false), pclUtils_(&nh_),
-        can_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-        temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-        kinect_transformed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>) {
+        can_cloud(new pcl::PointCloud<pcl::PointXYZRGB>) {
     ROS_INFO("in constructor of ObjectFinder...");
     // do any other desired initializations here...specific to your implementation
 
@@ -113,6 +108,8 @@ void ObjectFinder::transform_kinect_cloud() {
 
 void ObjectFinder::filter_kinect_cloud() {
     // First clear all our clouds
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr kinect_transformed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     can_cloud->clear();
     temp_cloud->clear();
     kinect_transformed_cloud->clear();
@@ -128,10 +125,11 @@ void ObjectFinder::filter_kinect_cloud() {
     pass.setFilterFieldName("z"); // we will "filter" based on points that lie within some range of z-value
     pass.setFilterLimits(surface_height, surface_height + CAN_HEIGHT); //here is the range of z values
     //std::vector<int> indices;
-    ROS_INFO("Filtering cloud by z height");
+    ROS_INFO("Filtering cloud by z height, limits are %f < z < %f", surface_height, surface_height + CAN_HEIGHT);
     pass.filter(*can_cloud); // Store the filtered cloud in the can_cloud container
     //ROS_INFO_STREAM( indices.size() << " indices passed by z filter.");
     ROS_INFO_STREAM("Z filtered cloud has " << can_cloud->size() << " points");
+    
     // Now we will filter by x and store it in the temp_cloud container
     ROS_INFO("Filtering cloud by x distance");
     pass.setInputCloud(can_cloud);
@@ -232,6 +230,7 @@ bool ObjectFinder::find_upright_coke_can(geometry_msgs::PoseStamped &object_pose
 // e.g.,  "demoAction" is auto-generated from (our) base name "demo" and generic name "Action"
 void ObjectFinder::executeCB(const actionlib::SimpleActionServer<object_finder::objectFinderAction>::GoalConstPtr& goal) {
     int object_id = goal->object_id;
+    object_finder::objectFinderResult result_; // put results here, to be sent back to the client when done w/ goal
     geometry_msgs::PoseStamped object_pose;
     bool known_surface_ht = goal->known_surface_ht;
     if (known_surface_ht) {
